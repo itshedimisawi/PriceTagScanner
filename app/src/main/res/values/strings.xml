@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">Price Tag Scanner</string>
+    <string name="total">Total</string>
+    <string name="scanned">scanned</string>
+    <string name="no_price_tags">No price tags scanned yet</string>
+    <string name="unknown_product">Unknown product</string>
+    <string name="confirm_delete_tags">Confirm deleting all scanned tags ?</string>
+    <string name="confirm">Confirm</string>
+    <string name="cancel">Cancel</string>
+    <string name="camera_permission_needed">Camera permission is needed. Tap to enable it</string>
+    <string name="camera_permission_perma_denied">Camera permission has been denied. Go to device settings to enable it</string>
+    <string name="app_title">PTS</string>
+    <string name="scan_again">Scan again</string>
+    <string name="remove_product">Remove product</string>
+    <string name="clear_all_products">Clear all products</string>
+    <string name="menu">Menu</string>
+    <string name="turn_on_flash">Turn on Flash</string>
+</resources>
