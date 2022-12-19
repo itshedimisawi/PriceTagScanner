@@ -13,7 +13,7 @@
 
 ## Introduction
 
-This is an open source application for extracting informations such as price and product names from price tags on store shelves and calculate the totalling of grocery bills.
+This is an open source application for extracting information such as price and product names from price tags on store shelves and calculating grocery bill totals.
 
 <p align="center">
   <img src = "readme_images/img0.png" width=350>
