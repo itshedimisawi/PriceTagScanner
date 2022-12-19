@@ -1,7 +1,7 @@
-<h1 align="center"> OCR Price Tag Scanner </h1>
+<h1 align="center"> Price Tag Scanner </h1>
 
 <p align="center">
-  Price Tag Scanner app built using Kotlin, Jetpack Compose, <a href="https://developers.google.com/ml-kit" target="_blank">MLKit</a> and <a href="https://opencv.org/android/" target="_blank">OpenCV4 SDK</a>.
+Price Tag Scanner app built using Kotlin, Jetpack Compose, <a href="https://developers.google.com/ml-kit" target="_blank">MLKit</a> and <a href="https://opencv.org/android/" target="_blank">OpenCV4 SDK</a>.
 </p>
 
 <p align="center">
@@ -16,8 +16,8 @@
 This is an open source application for extracting information such as price and product names from price tags on store shelves and calculating grocery bill totals.
 
 <p align="center">
-  <img src = "readme_images/img0.png" width=350>
-  <img src = "readme_images/img1.png" width=350>
+  <img src = "readme_images/img0.png" height=500>
+  <img src = "readme_images/img1.png" height=500>
 </p>
 
 ## Using Price Tag Scanner
