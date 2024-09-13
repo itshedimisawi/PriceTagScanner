@@ -15,3 +15,4 @@ dependencyResolutionManagement {
 rootProject.name = "Price Tag Scanner"
 include ':app'
 include ':OpenCV4'
+include ':opencv'
