@@ -3,7 +3,6 @@ package com.itshedi.pricetagscanner.ui
 import android.app.Application
 import android.content.Context
 import android.graphics.Rect
-import android.preference.PreferenceManager
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -12,9 +11,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.AndroidViewModel
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import com.itshedi.pricetagscanner.core.Product
-import com.itshedi.pricetagscanner.entity.ImageTextData
-import com.itshedi.pricetagscanner.entity.ScannedProduct
+import com.itshedi.pricetagscanner.models.ImageTextData
+import com.itshedi.pricetagscanner.models.Product
+import com.itshedi.pricetagscanner.models.ScannedProduct
 
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {

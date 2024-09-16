@@ -1,8 +1,7 @@
 package com.itshedi.pricetagscanner.core
 
 import android.graphics.Rect
-import android.util.Log
-import com.itshedi.pricetagscanner.entity.ImageTextData
+import com.itshedi.pricetagscanner.models.ImageTextData
 import kotlin.math.abs
 
 
@@ -12,7 +11,7 @@ fun findBadlyFormattedPrice(
 ): Pair<ImageTextData, Float>? {
 
     founShapes.filter {
-        it.text.replace(" ", "").isNumberWithLeadingCurrency() /* todo: check for currency sign*/
+        it.text.trim().isNumberWithLeadingCurrency()
     }.maxByOrNull { it.size }?.let { bigNumber -> //find biggest text
 
         founShapes

@@ -24,7 +24,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.itshedi.pricetagscanner.R
-import com.itshedi.pricetagscanner.entity.ScannedProduct
+import com.itshedi.pricetagscanner.models.ScannedProduct
 import com.itshedi.pricetagscanner.ui.theme.*
 import java.text.DecimalFormat
 
@@ -211,7 +211,6 @@ fun BottomSheetContent(mainViewModel: MainViewModel) {
             )
         }// 20 padding
     }
-
 }
 
 @Composable

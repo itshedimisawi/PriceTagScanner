@@ -1,30 +1,62 @@
 package com.itshedi.pricetagscanner.ui
 
-import android.graphics.Rect
-import android.util.Log
 import android.view.ViewGroup
 import androidx.activity.compose.BackHandler
 import androidx.camera.view.PreviewView
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
+import androidx.compose.animation.core.VectorConverter
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateValue
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
+import androidx.compose.material.BottomSheetScaffold
+import androidx.compose.material.ContentAlpha
+import androidx.compose.material.Icon
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
+import androidx.compose.material.contentColorFor
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.automirrored.filled.ArrowRightAlt
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.FlashOff
+import androidx.compose.material.icons.filled.FlashOn
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.rememberBottomSheetScaffoldState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.DrawStyle
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.VectorProperty
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -41,9 +73,9 @@ import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.calculateCurrentOffsetForPage
 import com.google.accompanist.pager.rememberPagerState
 import com.itshedi.pricetagscanner.R
-import com.itshedi.pricetagscanner.core.Product
-import com.itshedi.pricetagscanner.entity.ImageTextData
-import com.itshedi.pricetagscanner.entity.ScannedProduct
+import com.itshedi.pricetagscanner.models.Product
+import com.itshedi.pricetagscanner.models.ScannedProduct
+import com.itshedi.pricetagscanner.ui.camera.CameraCanvas
 import com.itshedi.pricetagscanner.ui.theme.AccentColor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -54,15 +86,13 @@ import kotlin.math.absoluteValue
 
 @Composable
 fun DismissScanButton(
-    modifier: Modifier,
-    onDismiss: () -> Unit
+    modifier: Modifier, onDismiss: () -> Unit
 ) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
+    Row(verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
             .clip(RoundedCornerShape(16.dp))
             .background(Color.Black.copy(0.4f))
-            .padding(horizontal = 12.dp , vertical = 8.dp)
+            .padding(horizontal = 12.dp, vertical = 8.dp)
             .clickable { onDismiss() }) {
         Icon(
             imageVector = Icons.Default.Refresh,
@@ -80,13 +110,14 @@ fun DismissScanButton(
 @Composable
 fun NoticeText(
     modifier: Modifier,
-    text:String,
+    text: String,
 ) {
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(16.dp))
             .background(Color.Black.copy(0.4f))
-            .padding(horizontal = 12.dp , vertical = 8.dp)) {
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+    ) {
         Text(text = text, color = Color.White)
     }
 }
@@ -107,7 +138,7 @@ fun ScanButton(
     multiplierValue: Int,
     onMultiplierValueChange: (Int) -> Unit,
     content: @Composable (() -> Unit),
-    ) {
+) {
 
     val transition = rememberInfiniteTransition()
 
@@ -121,9 +152,9 @@ fun ScanButton(
         )
     )
 
-    val buttonAlpha = if (isScanning && result==null){
+    val buttonAlpha = if (isScanning && result == null) {
         animatedAlpha
-    }else 1f
+    } else 1f
     val radius = if (result == null) {
         size / 2f
     } else 5.dp
@@ -143,8 +174,7 @@ fun ScanButton(
 
 
     Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center
+        modifier = modifier, contentAlignment = Alignment.Center
     ) {
         Box(
             modifier = Modifier
@@ -157,7 +187,9 @@ fun ScanButton(
                 .width(animatedWidth)
                 .height(animatedHeight)
                 .clip(RoundedCornerShape(animatedRadius))
-                .background(Color.White.copy(buttonAlpha), shape = RoundedCornerShape(animatedRadius))
+                .background(
+                    Color.White.copy(buttonAlpha), shape = RoundedCornerShape(animatedRadius)
+                )
                 .clickable(enabled = !isScanning && result == null) { onScan() },
             contentAlignment = Alignment.Center
         ) {
@@ -171,7 +203,7 @@ fun ScanButton(
                         verticalArrangement = Arrangement.SpaceEvenly
                     ) {
                         if (showMultiplierPicker) {
-                            DisposableEffect(Unit){
+                            DisposableEffect(Unit) {
                                 onDispose {
                                     onMultiplierValueChange(1)
                                 }
@@ -190,39 +222,38 @@ fun ScanButton(
                                     }
                                 }
                                 HorizontalPager(
-                                    count = 100, state = pagerState,
+                                    count = 100,
+                                    state = pagerState,
                                     contentPadding = PaddingValues(horizontal = maxHeight)
                                 ) { multiplier ->
-                                    Box(
-                                        modifier = Modifier
-                                            .graphicsLayer {
-                                                val pageOffset =
-                                                    calculateCurrentOffsetForPage(multiplier).absoluteValue
+                                    Box(modifier = Modifier
+                                        .graphicsLayer {
+                                            val pageOffset =
+                                                calculateCurrentOffsetForPage(multiplier).absoluteValue
 
-                                                lerp(
-                                                    start = 0.85f,
-                                                    stop = 1f,
-                                                    fraction = 1f - pageOffset.coerceIn(0f, 1f)
-                                                ).also { scale ->
-                                                    scaleX = scale
-                                                    scaleY = scale
-                                                }
+                                            lerp(
+                                                start = 0.85f,
+                                                stop = 1f,
+                                                fraction = 1f - pageOffset.coerceIn(0f, 1f)
+                                            ).also { scale ->
+                                                scaleX = scale
+                                                scaleY = scale
+                                            }
 
-                                                alpha = lerp(
-                                                    start = 0.5f,
-                                                    stop = 1f,
-                                                    fraction = 1f - pageOffset.coerceIn(0f, 1f)
-                                                )
+                                            alpha = lerp(
+                                                start = 0.5f,
+                                                stop = 1f,
+                                                fraction = 1f - pageOffset.coerceIn(0f, 1f)
+                                            )
+                                        }
+                                        .fillMaxHeight()
+                                        .aspectRatio(1f)
+                                        .clickable(enabled = multiplier != pagerState.currentPage) {
+                                            cs.launch {
+                                                pagerState.animateScrollToPage(multiplier)
                                             }
-                                            .fillMaxHeight()
-                                            .aspectRatio(1f)
-                                            .clickable(enabled = multiplier != pagerState.currentPage) {
-                                                cs.launch {
-                                                    pagerState.animateScrollToPage(multiplier)
-                                                }
-                                            }
-                                            .padding(2.dp)
-                                    ) {
+                                        }
+                                        .padding(2.dp)) {
                                         Text(
                                             text = (multiplier + 1).toString(),
                                             fontWeight = FontWeight.Bold,
@@ -249,13 +280,12 @@ fun ScanButton(
                             }
 
                         } else {
-                            Text(
-                                text = result.name.takeIf { it.trim().isNotEmpty() } ?: stringResource(R.string.unknown_product),
+                            Text(text = result.name.takeIf { it.trim().isNotEmpty() }
+                                ?: stringResource(R.string.unknown_product),
                                 color = Color.Black,
                                 fontSize = 16.sp,
                                 maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                                overflow = TextOverflow.Ellipsis)
                             Text(
                                 text = result.price.toString(),
                                 color = Color.Black,
@@ -266,27 +296,25 @@ fun ScanButton(
                             )
                         }
                     }
-                    Box(
-                        Modifier
-                            .size(maxHeight)
-                            .padding(8.dp)
-                            .clip(RoundedCornerShape(5.dp))
-                            .background(
-                                color = AccentColor.copy(0.7f),
-                                shape = RoundedCornerShape(5.dp)
-                            )
-                            .clickable {
-                                if (showMultiplierPicker) {
-                                    onAccept(result, multiplierValue)
-                                } else {
-                                    onNext()
-                                }
+                    Box(Modifier
+                        .size(maxHeight)
+                        .padding(8.dp)
+                        .clip(RoundedCornerShape(5.dp))
+                        .background(
+                            color = AccentColor.copy(0.7f), shape = RoundedCornerShape(5.dp)
+                        )
+                        .clickable {
+                            if (showMultiplierPicker) {
+                                onAccept(result, multiplierValue)
+                            } else {
+                                onNext()
                             }
-                            .padding(22.dp)) {
+                        }
+                        .padding(22.dp)) {
                         Icon(
                             imageVector = when (showMultiplierPicker) {
                                 true -> Icons.Default.Check
-                                false -> Icons.Default.ArrowRightAlt
+                                false -> Icons.AutoMirrored.Filled.ArrowRightAlt
                             },
                             contentDescription = stringResource(R.string.confirm),
                             tint = MaterialTheme.colors.contentColorFor(AccentColor),
@@ -345,81 +373,82 @@ fun CameraScreen(
                     .height(cameraContainerHeight)
             ) {
 
-                ChoiceConfirmDialog(
-                    showDialog = mainViewModel.clearScannedTagsConfirmDialog,
+                ChoiceConfirmDialog(showDialog = mainViewModel.clearScannedTagsConfirmDialog,
                     message = { Text(stringResource(R.string.confirm_delete_tags)) },
                     okMessage = stringResource(R.string.confirm),
                     cancelMessage = stringResource(R.string.cancel),
-                    onOk = { mainViewModel.clearScannedTags()
-                        mainViewModel.clearScannedTagsConfirmDialog = false},
-                    onCancel = { mainViewModel.clearScannedTagsConfirmDialog = false},
-                onDismissRequest = {mainViewModel.clearScannedTagsConfirmDialog = false })
+                    onOk = {
+                        mainViewModel.clearScannedTags()
+                        mainViewModel.clearScannedTagsConfirmDialog = false
+                    },
+                    onCancel = { mainViewModel.clearScannedTagsConfirmDialog = false },
+                    onDismissRequest = { mainViewModel.clearScannedTagsConfirmDialog = false })
                 when (permissionState) {
                     0 -> { // note: Permission granted
-                        AndroidView(modifier = Modifier.matchParentSize(),
-                            factory = { context ->
-                                val previewView =
-                                    PreviewView(context).apply {
-                                        this.scaleType =
-                                            scaleType
-                                        layoutParams =
-                                            ViewGroup.LayoutParams(
-                                                ViewGroup.LayoutParams.MATCH_PARENT,
-                                                ViewGroup.LayoutParams.MATCH_PARENT
-                                            )
-                                    }
+                        AndroidView(modifier = Modifier.matchParentSize(), factory = { context ->
+                            val previewView = PreviewView(context).apply {
+                                this.scaleType = scaleType
+                                layoutParams = ViewGroup.LayoutParams(
+                                    ViewGroup.LayoutParams.MATCH_PARENT,
+                                    ViewGroup.LayoutParams.MATCH_PARENT
+                                )
+                            }
 
-                                CoroutineScope(Dispatchers.IO).launch {
-                                    onPreviewView(previewView)
-                                }
-                                previewView
-                            })
+                            CoroutineScope(Dispatchers.IO).launch {
+                                onPreviewView(previewView)
+                            }
+                            previewView
+                        })
 
 
-                        LaunchedEffect(mainViewModel.cameraFocusPoint){
-                            mainViewModel.cameraFocusPoint?.let{
+                        LaunchedEffect(mainViewModel.cameraFocusPoint) {
+                            mainViewModel.cameraFocusPoint?.let {
 
                                 delay(500)
                                 mainViewModel.cameraFocusPoint = null
                             }
                         }
                         CameraCanvas(
-                            modifier = Modifier
-                                .fillMaxSize(), priceTagContour = mainViewModel.priceTagContour,
+                            modifier = Modifier.fillMaxSize(),
+                            priceTagContour = mainViewModel.priceTagContour,
                             foundPrice = mainViewModel.foundPrice,
                             foundProductName = mainViewModel.foundProductName,
                             cameraFocusPoint = mainViewModel.cameraFocusPoint
                         )
 
                         Column(
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter),
+                            modifier = Modifier.align(Alignment.BottomCenter),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
 
-                            if (mainViewModel.isScanning){
-                                NoticeText(modifier = Modifier.padding(bottom = 16.dp),
-                                    text = "Scanning..")
-                            }else{
+                            if (mainViewModel.isScanning) {
+                                NoticeText(
+                                    modifier = Modifier.padding(bottom = 16.dp), text = "Scanning.."
+                                )
+                            } else {
                                 if (mainViewModel.isScanButtonExtended && mainViewModel.lastScanResult != null) {
-                                    DismissScanButton(modifier = Modifier.padding(bottom = 16.dp),
+                                    DismissScanButton(
+                                        modifier = Modifier.padding(bottom = 16.dp),
                                         onDismiss = {
                                             mainViewModel.lastScanResult = null
 
                                             mainViewModel.showMultiplierPicker = false
                                         })
-                                }else{
-                                    if (mainViewModel.lastScanResult == null){
-                                        NoticeText(modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 16.dp),
-                                            text = "Press the shutter button to scan")
+                                } else {
+                                    if (mainViewModel.lastScanResult == null) {
+                                        NoticeText(
+                                            modifier = Modifier
+                                                .padding(horizontal = 16.dp)
+                                                .padding(bottom = 16.dp),
+                                            text = "Press the shutter button to scan"
+                                        )
                                     }
                                 }
                             }
 
 
                             ScanButton(
-                                modifier = Modifier
-                                    .padding(bottom = 40.dp),
+                                modifier = Modifier.padding(bottom = 40.dp),
                                 onScan = {
                                     onScan()
                                 },
@@ -448,10 +477,10 @@ fun CameraScreen(
                                 multiplierValue = mainViewModel.multiplierValue,
                                 onStateChanged = { mainViewModel.isScanButtonExtended = it },
                                 showMultiplierPicker = mainViewModel.showMultiplierPicker
-                            ) {
-                            }
+                            ) {}
                         }
                     }
+
                     1 -> { // note: Can request again
                         Column(modifier = Modifier
                             .fillMaxWidth()
@@ -459,12 +488,21 @@ fun CameraScreen(
                             .align(Alignment.Center)
                             .clickable {
                                 onRequestPermission()
-                            }, horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(imageVector = Icons.Default.CameraAlt, contentDescription = stringResource(R.string.camera_permission_needed), modifier = Modifier.padding(bottom = 12.dp))
-                            Text(stringResource(R.string.camera_permission_needed), textAlign = TextAlign.Center)
+                            }, horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CameraAlt,
+                                contentDescription = stringResource(R.string.camera_permission_needed),
+                                modifier = Modifier.padding(bottom = 12.dp)
+                            )
+                            Text(
+                                stringResource(R.string.camera_permission_needed),
+                                textAlign = TextAlign.Center
+                            )
                         }
 
                     }
+
                     2 -> { // note: Perma denied
                         Column(
                             modifier = Modifier
@@ -473,8 +511,15 @@ fun CameraScreen(
                                 .align(Alignment.Center),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Icon(imageVector = Icons.Default.CameraAlt, contentDescription = stringResource(R.string.camera_permission_perma_denied), modifier = Modifier.padding(bottom = 12.dp))
-                            Text(stringResource(R.string.camera_permission_perma_denied), textAlign = TextAlign.Center)
+                            Icon(
+                                imageVector = Icons.Default.CameraAlt,
+                                contentDescription = stringResource(R.string.camera_permission_perma_denied),
+                                modifier = Modifier.padding(bottom = 12.dp)
+                            )
+                            Text(
+                                stringResource(R.string.camera_permission_perma_denied),
+                                textAlign = TextAlign.Center
+                            )
                         }
                     }
                 }
@@ -486,8 +531,7 @@ fun CameraScreen(
                         .background(
                             Brush.verticalGradient(
                                 colors = listOf(
-                                    Color.Black.copy(0.9f),
-                                    Color.Transparent
+                                    Color.Black.copy(0.9f), Color.Transparent
                                 )
                             )
                         )
@@ -498,13 +542,9 @@ fun CameraScreen(
                             .padding(horizontal = 16.dp)
                             .systemBarsPadding()
                     ) { // overlay content
-                        HomeActionBar(
-                            modifier = Modifier,
-                            onMenu = {  },
-                            onFlash = {
-                                onFlash()
-                            },
-                            isFlashOn = mainViewModel.isFlashOn
+                        HomeActionBar(modifier = Modifier, onMenu = { }, onFlash = {
+                            onFlash()
+                        }, isFlashOn = mainViewModel.isFlashOn
                         )
                     }
                 }
@@ -515,8 +555,7 @@ fun CameraScreen(
 
 @Composable
 fun HomeActionBar(
-    modifier: Modifier, onMenu: () -> Unit, onFlash: () -> Unit,
-    isFlashOn: Boolean
+    modifier: Modifier, onMenu: () -> Unit, onFlash: () -> Unit, isFlashOn: Boolean
 ) {
     Box(modifier = modifier.fillMaxWidth()) {
         Box(modifier = modifier
@@ -524,7 +563,11 @@ fun HomeActionBar(
             .clip(CircleShape)
             .clickable { onMenu() }
             .padding(12.dp)) {
-            Icon(imageVector = Icons.Default.Menu, contentDescription = stringResource(R.string.menu), tint = Color.White)
+            Icon(
+                imageVector = Icons.Default.Menu,
+                contentDescription = stringResource(R.string.menu),
+                tint = Color.White
+            )
         }
 
         Text(
@@ -544,162 +587,7 @@ fun HomeActionBar(
                 imageVector = when (isFlashOn) {
                     true -> Icons.Default.FlashOff
                     else -> Icons.Default.FlashOn
-                }, contentDescription = stringResource(R.string.turn_on_flash),
-                tint = Color.White
-            )
-        }
-    }
-}
-
-@Composable
-fun CameraCanvas(
-    modifier: Modifier,
-    foundPrice: ImageTextData?,
-    foundProductName: ImageTextData?,
-    priceTagContour: Rect?,
-    cameraFocusPoint: Offset? = null
-) {
-    val radius = if (cameraFocusPoint==null) 46f else 56f
-    val animatedRadius = animateFloatAsState(radius,
-        animationSpec = tween(durationMillis = 300, easing = LinearEasing
-    ))
-
-
-
-    Canvas(
-        modifier = modifier,
-    ) {
-
-        val left = size.width / 10f
-        val top = size.height / 2.8f
-        val right = size.width - left
-        val bottom = size.height - top
-
-        val lengthF = 50.0f // Length of stand out from corners
-        val strokeF = 4f
-
-        cameraFocusPoint?.let{
-            drawCircle(color = Color.White, radius = animatedRadius.value, center = it , style = Stroke(width = 4f))
-        }
-
-        drawLine(
-            color = Color.White,
-            strokeWidth = strokeF,
-            start = Offset(left, top),
-            end = Offset(left + lengthF, top)
-        ) // Top Left to right
-        drawLine(
-            color = Color.White,
-            strokeWidth = strokeF,
-            start = Offset(left, top),
-            end = Offset(left, top + lengthF)
-        ) // Top Left to bottom
-        drawLine(
-            color = Color.White,
-            strokeWidth = strokeF,
-            start = Offset(right, top),
-            end = Offset(right - lengthF, top)
-        ) // Top Right to left
-        drawLine(
-            color = Color.White,
-            strokeWidth = strokeF,
-            start = Offset(right, top),
-            end = Offset(right, top + lengthF)
-        ) // Top Right to Bottom
-        drawLine(
-            color = Color.White,
-            strokeWidth = strokeF,
-            start = Offset(left, bottom),
-            end = Offset(left + lengthF, bottom)
-        ) // Bottom Left to right
-        drawLine(
-            color = Color.White,
-            strokeWidth = strokeF,
-            start = Offset(left, bottom),
-            end = Offset(left, bottom - lengthF)
-        ) // Bottom Left to top
-        drawLine(
-            color = Color.White,
-            strokeWidth = strokeF,
-            start = Offset(right, bottom),
-            end = Offset(right - lengthF, bottom)
-        ) // Bottom right to left
-        drawLine(
-            color = Color.White,
-            strokeWidth = strokeF,
-            start = Offset(right, bottom),
-            end = Offset(right, bottom - lengthF)
-        ) // Bottom right to top
-
-
-
-
-        foundPrice?.let {
-
-            val horizontalRatio =
-                size.width / it.imageSize.height //good
-            val verticalRatio =
-                size.height / it.imageSize.width //good
-
-            val priceLeft =
-                it.rect.left * horizontalRatio
-            val priceTop = it.rect.top * verticalRatio
-
-            val rectWidth =
-                it.rect.width() * horizontalRatio
-
-            val rectHeight =
-                it.rect.height() * verticalRatio
-
-
-
-            priceTagContour?.let { ptc ->
-
-                val ptcLeft =
-                    ptc.left * horizontalRatio
-                val ptcTop = ptc.top * verticalRatio
-
-                val ptcWidth =
-                    ptc.width() * horizontalRatio
-
-                val ptcHeight =
-                    ptc.height() * verticalRatio
-
-                drawRect(
-                    color = Color.White.copy(0.5f),
-                    topLeft = Offset(ptcLeft, ptcTop),
-                    size = Size(ptcWidth, ptcHeight)
-                )
-            }
-
-            drawRect(
-                color = Color.Yellow.copy(0.5f),
-                topLeft = Offset(priceLeft, priceTop),
-                size = Size(rectWidth, rectHeight)
-            )
-
-        }
-        foundProductName?.let {
-
-            val horizontalRatio =
-                size.width / it.imageSize.height //good
-            val verticalRatio =
-                size.height / it.imageSize.width //good
-
-            val productNameLeft =
-                it.rect.left * horizontalRatio
-            val productNameTop = it.rect.top * verticalRatio
-
-            val rectWidth =
-                it.rect.width() * horizontalRatio
-
-            val rectHeight =
-                it.rect.height() * verticalRatio
-
-            drawRect(
-                color = Color.Yellow.copy(0.5f),
-                topLeft = Offset(productNameLeft, productNameTop),
-                size = Size(rectWidth, rectHeight)
+                }, contentDescription = stringResource(R.string.turn_on_flash), tint = Color.White
             )
         }
     }

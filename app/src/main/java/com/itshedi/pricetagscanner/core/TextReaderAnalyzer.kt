@@ -10,15 +10,12 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
-import com.itshedi.pricetagscanner.entity.ImageTextData
+import com.itshedi.pricetagscanner.models.FrameResult
+import com.itshedi.pricetagscanner.models.ImageTextData
+import com.itshedi.pricetagscanner.models.Product
 import org.opencv.core.Core
 import org.opencv.core.Mat
 import java.io.IOException
-
-data class Product(
-    val name: String,
-    val price:Double
-)
 
 @ExperimentalGetImage
 class TextReaderAnalyzer(
@@ -102,7 +99,6 @@ class TextReaderAnalyzer(
 
             imageProxy.close()
         }
-
 
         if (scannedFrames == 10 && frameResultList.size < 5) {
             currentConfidence = MINIMUM_CONFIDENCE
@@ -232,6 +228,7 @@ class TextReaderAnalyzer(
             imageTextData.first.sortedByDescending { it.size },
             currentConfidence
         ) //look for price and stack it
+
         onFoundPrice(foundPrice)
         foundPrice?.let {
             val frameResult = FrameResult(visionText, it)
@@ -239,7 +236,8 @@ class TextReaderAnalyzer(
             val priceTagContour =
                 findPriceTagContour(foundContours = foundSurfaces, priceContour = it.rect)
             onFoundPriceTagContour(priceTagContour)
-            // look for product name
+
+            // look for product name within the contour
             priceTagContour?.let { ptc ->
                 frameResult.priceTagContour = ptc
                 val foundProductName = findProductName(
@@ -254,18 +252,11 @@ class TextReaderAnalyzer(
             }
             return frameResult
         }
-
         return null
 
     }
 
-    fun electMajority(resultList: List<String>) = resultList.groupingBy { it }.eachCount().maxByOrNull { it.value }?.key
+    private fun electMajority(resultList: List<String>) = resultList.groupingBy { it }.eachCount().maxByOrNull { it.value }?.key
 
 }
 
-data class FrameResult(
-    val visionText: Text,// for the next frame to use
-    val price: ImageTextData,
-    var productName: String? = null,
-    var priceTagContour: Rect? = null
-)
