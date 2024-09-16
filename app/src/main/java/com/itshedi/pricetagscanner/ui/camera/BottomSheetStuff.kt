@@ -1,4 +1,4 @@
-package com.itshedi.pricetagscanner.ui
+package com.itshedi.pricetagscanner.ui.camera
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -14,6 +14,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.ClearAll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Modifier
@@ -25,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.itshedi.pricetagscanner.R
 import com.itshedi.pricetagscanner.models.ScannedProduct
+import com.itshedi.pricetagscanner.ui.ChoiceConfirmDialog
 import com.itshedi.pricetagscanner.ui.theme.*
 import java.text.DecimalFormat
 
@@ -107,7 +112,7 @@ fun BottomSheetHandle(modifier: Modifier) {
 }
 
 @Composable
-fun BottomSheetESP(modifier: Modifier) {
+fun BottomSheetEmptyStatePlaceholder(modifier: Modifier) {
     Box(modifier = modifier, contentAlignment = Center) {
         Text(
             text = stringResource(R.string.no_price_tags),
@@ -118,16 +123,36 @@ fun BottomSheetESP(modifier: Modifier) {
 }
 
 @Composable
-fun BottomSheetContent(mainViewModel: MainViewModel) {
+fun BottomSheetContent(scannedPriceTags: List<ScannedProduct>, onRemovePriceTag: (Int) -> Unit,
+                       onClearScannedTags: () -> Unit) {
+    var clearScannedTagsConfirmDialog by remember { mutableStateOf(false) }
+
+
+    ChoiceConfirmDialog(showDialog = clearScannedTagsConfirmDialog,
+        message = { Text(stringResource(R.string.confirm_delete_tags)) },
+        okMessage = stringResource(R.string.confirm),
+        cancelMessage = stringResource(R.string.cancel),
+        onOk = {
+            onClearScannedTags()
+            clearScannedTagsConfirmDialog = false
+        },
+        onCancel = { clearScannedTagsConfirmDialog = false },
+        onDismissRequest = { clearScannedTagsConfirmDialog = false })
+
+
     Box(
         modifier = Modifier
             .navigationBarsPadding()
             .fillMaxWidth()
+            .background(
+                when (isSystemInDarkTheme()) {
+                    true -> sheetBackgroundDarkColor
+                    else -> sheetBackgroundColor
+                }
+            )
     ) {
-
-
-        when (mainViewModel.scannedPriceTags.size == 0) {
-            true -> BottomSheetESP(
+        when (scannedPriceTags.isEmpty()) {
+            true -> BottomSheetEmptyStatePlaceholder(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 20.dp)
@@ -138,57 +163,35 @@ fun BottomSheetContent(mainViewModel: MainViewModel) {
             false -> {
                 Column(
                     modifier = Modifier
-                        .navigationBarsPadding()
                         .fillMaxWidth()
-                        .background(
-                            when (isSystemInDarkTheme()) {
-                                true -> sheetBackgroundDarkColor
-                                else -> sheetBackgroundColor
-                            }
-                        )
                 ) {
-
-
                     BottomSheetHeader(modifier = Modifier
                         .fillMaxWidth()
-                        .background(
-                            when (isSystemInDarkTheme()) {
-                                true -> sheetSurfaceDarkColor
-                                else -> sheetSurfaceColor
-                            }
-                        )
                         .padding(top = 20.dp) // for handle after background to include it to the handle
                         .padding(
                             start = 16.dp, end = 16.dp
                         ),
-                        scannedProductCount = mainViewModel.scannedPriceTags.size,
-                        total = mainViewModel.scannedPriceTags.sumOf { it.price * it.multiplier },
-                        onClear = { mainViewModel.clearScannedTagsConfirmDialog = true })
+                        scannedProductCount = scannedPriceTags.size,
+                        total = scannedPriceTags.sumOf { it.price * it.multiplier },
+                        onClear = { clearScannedTagsConfirmDialog = true })
 
 
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 8.dp)
-                            .background(
-                                when (isSystemInDarkTheme()) {
-                                    true -> sheetSurfaceDarkColor
-                                    else -> sheetSurfaceColor
-                                }
-                            )
                     ) {
-
                         LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                            itemsIndexed(mainViewModel.scannedPriceTags) { index, item ->
+                            itemsIndexed(scannedPriceTags) { index, item ->
                                 Column {
                                     ScannedProductItem(modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(vertical = 4.dp),
                                         product = item,
                                         onDelete = {
-                                            mainViewModel.scannedPriceTags.removeAt(index)
+                                            onRemovePriceTag(index)
                                         })
-                                    if (index + 1 < mainViewModel.scannedPriceTags.size) {
+                                    if (index + 1 < scannedPriceTags.size) {
                                         Divider(
                                             color = MaterialTheme.colors.onBackground.copy(0.2f)
                                         )
@@ -209,7 +212,7 @@ fun BottomSheetContent(mainViewModel: MainViewModel) {
                     .align(Center)
                     .padding(top = 8.dp)
             )
-        }// 20 padding
+        }
     }
 }
 

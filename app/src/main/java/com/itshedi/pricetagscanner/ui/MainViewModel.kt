@@ -44,7 +44,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     var scannedPriceTags = mutableStateListOf<ScannedProduct>()
 
-    var clearScannedTagsConfirmDialog by mutableStateOf(false)
 
     fun addPriceTag(priceTag: ScannedProduct){
         scannedPriceTags.add(0,priceTag)
