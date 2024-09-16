@@ -41,6 +41,7 @@ import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.calculateCurrentOffsetForPage
 import com.google.accompanist.pager.rememberPagerState
 import com.itshedi.pricetagscanner.R
+import com.itshedi.pricetagscanner.core.Product
 import com.itshedi.pricetagscanner.entity.ImageTextData
 import com.itshedi.pricetagscanner.entity.ScannedProduct
 import com.itshedi.pricetagscanner.ui.theme.AccentColor
@@ -95,18 +96,17 @@ fun NoticeText(
 fun ScanButton(
     modifier: Modifier, onScan: () -> Unit,
     isScanning: Boolean,
-    result: Pair<Double, String?>?,
+    result: Product?,
     size: Dp,
     maxWidth: Dp,
     maxHeight: Dp,
-    onAccept: (Pair<Double, String?>, Int) -> Unit,
+    onAccept: (Product, Int) -> Unit,
     onNext: () -> Unit,
     onStateChanged: (Boolean) -> Unit,
     showMultiplierPicker: Boolean,
     multiplierValue: Int,
     onMultiplierValueChange: (Int) -> Unit,
     content: @Composable (() -> Unit),
-
     ) {
 
     val transition = rememberInfiniteTransition()
@@ -158,10 +158,10 @@ fun ScanButton(
                 .height(animatedHeight)
                 .clip(RoundedCornerShape(animatedRadius))
                 .background(Color.White.copy(buttonAlpha), shape = RoundedCornerShape(animatedRadius))
-                .clickable(enabled = !isScanning && result?.first == null) { onScan() },
+                .clickable(enabled = !isScanning && result == null) { onScan() },
             contentAlignment = Alignment.Center
         ) {
-            if (result?.first != null) {
+            if (result != null) {
                 Row(modifier = Modifier.fillMaxSize()) {
                     Column(
                         modifier = Modifier
@@ -250,15 +250,14 @@ fun ScanButton(
 
                         } else {
                             Text(
-                                text = result.second ?: stringResource(R.string.unknown_product),
+                                text = result.name.takeIf { it.trim().isNotEmpty() } ?: stringResource(R.string.unknown_product),
                                 color = Color.Black,
                                 fontSize = 16.sp,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
-
                             Text(
-                                text = result.first.toString(),
+                                text = result.price.toString(),
                                 color = Color.Black,
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
@@ -298,19 +297,13 @@ fun ScanButton(
                     }
                 }
             } else {
-
                 content()
-
-
             }
-
         }
     }
-
 }
 
 
-@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun CameraScreen(
     permissionState: Int, // 0 granted 1 denied once 2 perma denied
@@ -438,8 +431,8 @@ fun CameraScreen(
                                 onAccept = { item, multiplier ->
                                     mainViewModel.addPriceTag(
                                         ScannedProduct(
-                                            productName = item.second,
-                                            price = item.first,
+                                            productName = item.name,
+                                            price = item.price,
                                             multiplier = multiplier
                                         )
                                     )

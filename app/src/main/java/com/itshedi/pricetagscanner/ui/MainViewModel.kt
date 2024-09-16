@@ -12,6 +12,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.AndroidViewModel
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.itshedi.pricetagscanner.core.Product
 import com.itshedi.pricetagscanner.entity.ImageTextData
 import com.itshedi.pricetagscanner.entity.ScannedProduct
 
@@ -21,7 +22,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val sharedPreferences = getApplication<Application>()
         .getSharedPreferences("main_prefs", Context.MODE_PRIVATE)
 
-    var bmv by mutableStateOf<String?>(null)
 
     var foundPrice by mutableStateOf<ImageTextData?>(null)
 
@@ -31,7 +31,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     var isScanning by mutableStateOf(false)
 
-    var lastScanResult by mutableStateOf<Pair<Double, String?>?>(null)
+    var lastScanResult by mutableStateOf<Product?>(null)
 
     var cameraFocusPoint by mutableStateOf<Offset?>(null)
 

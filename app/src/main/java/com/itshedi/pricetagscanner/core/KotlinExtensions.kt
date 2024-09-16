@@ -3,8 +3,6 @@ package com.itshedi.pricetagscanner.core
 import android.graphics.ImageFormat
 import android.graphics.Rect
 import android.media.Image
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.PermissionState
 import org.opencv.core.CvType
 import org.opencv.core.Mat
 import org.opencv.imgproc.Imgproc
@@ -12,10 +10,6 @@ import java.util.regex.Pattern
 import kotlin.math.max
 
 
-@ExperimentalPermissionsApi
-fun PermissionState.isPermanentlyDenied(): Boolean {
-    return !shouldShowRationale && !hasPermission
-}
 
 fun Rect.expandBy(rect: Rect): Rect {
     return Rect(

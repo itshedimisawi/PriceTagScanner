@@ -15,15 +15,18 @@ import org.opencv.core.Core
 import org.opencv.core.Mat
 import java.io.IOException
 
+data class Product(
+    val name: String,
+    val price:Double
+)
 
 @ExperimentalGetImage
 class TextReaderAnalyzer(
-    private val onResultFound: (Pair<Double, String?>?) -> Unit,
+    private val onResultFound: (Product) -> Unit,
     private val onScanStateChanged: (Boolean) -> Unit,
     private val onFoundPrice: (ImageTextData?) -> Unit,
     private val onFoundProductName: (ImageTextData?) -> Unit,
     private val onFoundPriceTagContour: (Rect?) -> Unit,
-    private val onBenchmark: (String) -> Unit,
 ) : ImageAnalysis.Analyzer {
 
     var lastFrameTimestamp: Long = 0
@@ -41,36 +44,27 @@ class TextReaderAnalyzer(
 
 
     fun startScan() {
-
         scannedFrames = 0
         frameResultList.clear()
         isScanning = true
         onScanStateChanged(true)
-        scanStartTimestamp = System.currentTimeMillis()
     }
 
-    var scanStartTimestamp: Long = 0
-
-    var tmpTimeStamp: Long = 0
 
     override fun analyze(imageProxy: ImageProxy) {
         if (isScanning) {
             val thisImageTimestamp = System.currentTimeMillis()
 
-            if (thisImageTimestamp - lastFrameTimestamp > 50) { //if lastFrameTimestamp's been over 100ms since last frame
+            if (thisImageTimestamp - lastFrameTimestamp > 50) { // interal between frames
 
                 lastFrameTimestamp = thisImageTimestamp
                 imageProxy.image?.let { image ->
-
                     process(image, imageProxy)
                 }
-            } else {
-
-                imageProxy.close()
+                return
             }
-        } else {
-            imageProxy.close()
         }
+        imageProxy.close()
     }
 
     private fun process(image: Image, imageProxy: ImageProxy) {
@@ -84,34 +78,27 @@ class TextReaderAnalyzer(
                 )
                 scannedFrames++
             } catch (e: IOException) {
-
                 e.printStackTrace()
             }
         } else {
-
-            onBenchmark("${System.currentTimeMillis() - scanStartTimestamp}")
             electMajority(frameResultList.map { it.price.text })?.let { price ->
                 "\\d{1,5}(?:[.,]\\d{3})*(?:[.,]\\d{1,3})".toRegex().find(price)
                     ?.let { cleanedPrice ->
-
                         onResultFound(
-                            Pair(
-                                cleanedPrice.value.replace(",", ".").toDouble(),
-                                electMajority(frameResultList.filter { it.productName != null }
-                                    .map { it.productName!! })
+                            Product(
+                                price = cleanedPrice.value.replace(",", ".").toDouble(),
+                                name = electMajority(frameResultList.filter { it.productName != null }
+                                    .map { it.productName!! }) ?: ""
                             )
                         )
                     }
-
             }
 
             isScanning = false
-
             onScanStateChanged(false)
             onFoundPrice(null)
             onFoundProductName(null)
             onFoundPriceTagContour(null)
-
 
             imageProxy.close()
         }
@@ -119,18 +106,12 @@ class TextReaderAnalyzer(
 
         if (scannedFrames == 10 && frameResultList.size < 5) {
             currentConfidence = MINIMUM_CONFIDENCE
-
         }
     }
 
 
     private fun collectFrameData(image: InputImage, imageProxy: ImageProxy) {
-
-        tmpTimeStamp = System.currentTimeMillis()
-
         if (frameResultList.size % 6 == 0) { // text recognition frame
-
-
             imageProxy.image?.let {
                 TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
                     .process(image)
@@ -171,61 +152,6 @@ class TextReaderAnalyzer(
         }
     }
 
-//
-//    private fun electResult(round: Int): Pair<String?, String?>? {
-//
-//        val productList = frameResultList.filter { it.productName != null }
-//        when (round) {
-//            5 -> { // all similar && productnames > 2
-//                if (frameResultList.all { it.price.text == frameResultList.last().price.text } &&
-//                    frameResultList.size == 5 && productList.size > 2) {
-//                    return Pair(
-//                        frameResultList.last().price.text,
-//                        electMajority(productList.map { it.productName!! })
-//                    )
-//                }
-//            }
-//            10 -> {
-//                frameResultList.map { it.price.text }.groupingBy { it }.eachCount()
-//                    .maxByOrNull { it.value }?.let { reducedPrice ->
-//                        if (frameResultList.size < 9) { // majority & at least 1/3 product names
-//                            if ((reducedPrice.value >= frameResultList.size / 2) &&
-//                                (productList.size > frameResultList.size / 3)
-//                            ) {
-//                                return Pair(
-//                                    electMajority(frameResultList.map { it.price.text }),
-//                                    electMajority(productList.map { it.productName!! })
-//                                )
-//                            }
-//                        } else { // majority
-//                            if (reducedPrice.value >= frameResultList.size / 2
-//                            ) {
-//                                return Pair(
-//                                    electMajority(frameResultList.map { it.price.text }),
-//                                    electMajority(productList.map { it.productName!! })
-//                                )
-//                            }
-//                        }
-//                    }
-//            }
-//            else -> { // majority
-//                frameResultList.map { it.price.text }.groupingBy { it }.eachCount()
-//                    .maxByOrNull { it.value }?.let { reducedPrice ->
-//                        if (reducedPrice.value >= frameResultList.size / 2
-//                        ) {
-//                            return Pair(
-//                                electMajority(frameResultList.map { it.price.text }),
-//                                electMajority(productList.map { it.productName!! })
-//                            )
-//                        }
-//                    }
-//            }
-//        }
-//        return null
-//    }
-
-
-
 
     private fun processPriceTagFromImage(
         visionText: Text,
@@ -234,20 +160,15 @@ class TextReaderAnalyzer(
         mat: Mat
     ): FrameResult? {
 
-
-        val rects = ArrayList<Rect>()
-
-
+        // check camera sensor rotation and adjust the captured image accordingly
         when (rotation) {
             90 -> Core.rotate(mat, mat, Core.ROTATE_90_CLOCKWISE)
             180 -> Core.rotate(mat, mat, Core.ROTATE_180)
             270 -> Core.rotate(mat, mat, Core.ROTATE_90_COUNTERCLOCKWISE)
         }
 
-
         val contours = findImageContours(mat)
-        rects.addAll(getAllRects(contours = contours))
-
+        val rects = getAllRects(contours = contours)
 
 
         var id = 0
@@ -259,8 +180,8 @@ class TextReaderAnalyzer(
                     ImageTextData(
                         id = id,
                         imageSize = Size(
-                            image.width.toFloat(),
-                            image.height.toFloat()
+                            image.width,
+                            image.height
                         ),
                         rect = blockFrame,
                         text = block.text,
@@ -279,8 +200,8 @@ class TextReaderAnalyzer(
                             ImageTextData(
                                 id = id,
                                 imageSize = Size(
-                                    image.width.toFloat(),
-                                    image.height.toFloat()
+                                    image.width,
+                                    image.height
                                 ),
                                 rect = frame,
                                 text = element.text,
@@ -300,7 +221,7 @@ class TextReaderAnalyzer(
 
 
     fun analyzeFrame(
-        imageTextData: Pair<ArrayList<ImageTextData>, ArrayList<Rect>>,
+        imageTextData: Pair<ArrayList<ImageTextData>, List<Rect>>,
         blockData: ArrayList<ImageTextData>,
         visionText: Text
     ): FrameResult? {
@@ -338,14 +259,7 @@ class TextReaderAnalyzer(
 
     }
 
-
-    fun electMajority(resultList: List<String>?): String? {
-        //todo improve
-        resultList?.let {
-            return resultList.groupingBy { it }.eachCount().maxByOrNull { it.value }?.key
-        }
-        return null
-    }
+    fun electMajority(resultList: List<String>) = resultList.groupingBy { it }.eachCount().maxByOrNull { it.value }?.key
 
 }
 
